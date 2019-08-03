@@ -120,7 +120,30 @@ makeMap_06 <- function(sft, dfm){
 makeMap_06(sft = dst, dfm = tbl)
 
 # Mapa 7. Barreras ida moto y bicicleta -----------------------------------
-
+makeMap_07 <- function(dfm){
+  # dfm <- tbl
+  dfm <- dfm %>% 
+    dplyr::select(id_encuesta, a_5, f_19:f_33)
+  lbl <- data.frame(nameCol = paste0('f_', c(19:24, 26:33)),
+                    barrera = c('m_abordar', 'm_ubicar', 'm_manejar', 'm_retr', 'm_leer', 'm_pr_pav', 'm_bajar',
+                                'b_abordar', 'b_ubicar', 'b_leer', 'b_movili', 'b_pr_pav', 'b_dcdrrecor', 'b_bajar'))
+  nms <- as.character(lbl$barrera)
+  dfm <- dfm %>% 
+    setNames(c('id_encuesta', 'barrio', nms)) %>% 
+    dplyr::select(-id_encuesta) %>% 
+    gather(dificultad, tipo, -barrio) %>% 
+    drop_na() %>%
+    filter(tipo %in% c('Alto', 'Muy Alto')) %>% 
+    group_by(barrio, dificultad) %>% 
+    summarize(count = n()) %>% 
+    ungroup() %>% 
+    spread(dificultad, count)
+  rsl <- inner_join(shp, dfm, by = c('BARRIO' = 'barrio'))
+  rsl <- as(rsl, 'Spatial')
+  writeOGR(obj = rsl, dsn = '../data/shp/own/movilidad/barrios', layer = paste0('07_barrera_ida_bicimoto_', dte), driver = 'ESRI Shapefile', overwrite_layer = TRUE)
+  print('Done!')
+}
+makeMap_07(dfm = tbl)
 
 
 
