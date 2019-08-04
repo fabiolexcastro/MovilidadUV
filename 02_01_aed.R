@@ -498,10 +498,9 @@ makeMap_18 <- function(sft, dfm){
     as.data.frame() %>% 
     as_tibble() %>% 
     dplyr::select(-geometry)
-  
   # Labels
-  lbl <- data.frame(nameCol = paste0('f_', 120:130),
-                    barrera = c('ubicar', 'llgr_pard', 'a_prio', 'abrdr_vh', 'ubicar_asn', 'uso_prio', 'dcd_rcrrd', 'com_dst', 'pagar', 'leer', 'bajar'))
+  lbl <- data.frame(nameCol = paste0('f_', c(1:7, 9:10)),
+                    barrera = c('idnt_clles', 'sbr_bjr', 'dspl_and', 'dspl_obst', 'prb_pav', 'acera_rmps', 'crzr_clls', 'puentes', 'leer'))
   nms <- as.character(lbl$barrera)
   dfm <- inner_join(int, dfm, by = c('ID_ENCUEST' = 'id_encuesta'))
   dfm <- dfm %>% 
@@ -518,7 +517,210 @@ makeMap_18 <- function(sft, dfm){
     retype()
   rsl <- inner_join(shp, dfm, by = c('BARRIO' = 'barrio')) 
   rsl <- as(rsl, 'Spatial')
-  writeOGR(obj = rsl, dsn = '../data/shp/own/movilidad/barrios', layer = paste0('16_barreras_regreso_articulado_', dte), driver = 'ESRI Shapefile', overwrite_layer = TRUE)
+  writeOGR(obj = rsl, dsn = '../data/shp/own/movilidad/barrios', layer = paste0('18_barreras_regreso_peaton_', dte), driver = 'ESRI Shapefile', overwrite_layer = TRUE)
   print('Done!')
 }
-makeMap_16(sft = dst, dfm = tbl)
+makeMap_18(sft = dst, dfm = tbl)
+
+
+# Mapa 19. Lineas de deseo de los viajes totales -----------------
+makeMap_19 <- function(dfm){
+  # dfm <- tbl
+  lbl <- data.frame(tipo = c('Para ir a atención médica',
+                             'Para ir a trabajar',
+                             'Para asuntos personales',
+                             'Para ir a estudiar',
+                             'Para realizar actividades deportivas o culturales',
+                             'Para realizar actividades sociales',
+                             'Para ir de compras',
+                             'Otro'),
+                    label = c('medica',
+                              'trabajar',
+                              'asunt_per',
+                              'estudiar',
+                              'deporte',
+                              'sociales',
+                              'compras',
+                              'otro'))
+  lbl <- lbl %>% mutate(tipo = as.character(tipo))
+  dfm <- dfm %>% 
+    dplyr::select(a_5, e_4) %>% 
+    group_by(a_5, e_4) %>% 
+    summarize(count = n()) %>% 
+    ungroup() %>% 
+    drop_na() %>% 
+    inner_join(., lbl, by = c('e_4' = 'tipo')) %>% 
+    dplyr::select(-e_4) %>% 
+    spread(label, count) %>% 
+    NAer() %>% 
+    retype() %>% 
+    as_tibble()
+  rsl <- inner_join(shp, dfm, by = c('BARRIO' = 'a_5'))
+  rsl <- as(rsl, 'Spatial')
+  writeOGR(obj = rsl, dsn = '../data/shp/own/movilidad/barrios', layer = paste0('19_lineas_de_deseo_', dte), driver = 'ESRI Shapefile', overwrite_layer = TRUE)
+  print('Done!')
+}
+makeMap_19(dfm = tbl)
+
+# Mapa 20. Causa discapacidad  de PcD -------------------------------------
+makeMap_20 <- function(dfm){
+  # dfm <- tbl
+  lbl <- data.frame(tipo = c('Por edad avanzada, envejecimiento',
+                             'Porque nació así',
+                             'Por otra causa',
+                             'Por un accidente',
+                             'Por una enfermedad',
+                             'Por hechos violentos',
+                             'No sabe',
+                             'Por otra causa'),
+                    label = c('edad',
+                              'nacim',
+                              'otra_causa',
+                              'accidnt',
+                              'enferm',
+                              'violenc',
+                              'nosabe',
+                              'otra'))
+  lbl <- lbl %>% mutate(tipo = as.character(tipo))
+  dfm <- dfm %>% 
+    dplyr::select(a_5, d_2) %>% 
+    inner_join(., lbl, by = c('d_2' = 'tipo')) %>% 
+    dplyr::select(-d_2) %>% 
+    group_by(a_5, label) %>% 
+    summarize(count = n()) %>% 
+    ungroup() %>% 
+    drop_na() %>% 
+    spread(label, count) %>% 
+    NAer() %>% 
+    retype()
+  rsl <- inner_join(shp, dfm, by = c('BARRIO' = 'a_5'))
+  rsl <- as(rsl, 'Spatial')
+  writeOGR(obj = rsl, dsn = '../data/shp/own/movilidad/barrios', layer = paste0('20_causa_discapacidad_', dte), driver = 'ESRI Shapefile', overwrite_layer = TRUE)
+  print('Done!')
+}
+makeMap_20(dfm = tbl)
+
+# Mapa 21. Sexo de la PcD -------------------------------------------------
+makeMap_21 <- function(dfm){
+  # dfm <- tbl
+  dfm <- dfm %>% 
+    dplyr::select(a_5, c_1) %>% 
+    group_by(a_5, c_1) %>% 
+    summarize(count = n()) %>% 
+    ungroup() %>% 
+    spread(c_1, count) %>% 
+    NAer() %>% 
+    retype()
+  rsl <- inner_join(shp, dfm, by = c('BARRIO' = 'a_5'))
+  rsl <- as(rsl, 'Spatial')
+  writeOGR(obj = rsl, dsn = '../data/shp/own/movilidad/barrios', layer = paste0('21_sexo_', dte), driver = 'ESRI Shapefile', overwrite_layer = TRUE)
+  print('Done!')
+}
+makeMap_21(dfm = tbl)
+
+# Mapa 22. Rango de edad --------------------------------------------------
+makeMap_22 <- function(dfm){
+  # dfm <- tbl
+  rcl <- pull(dfm, c_2) %>% 
+    as.numeric() %>% 
+    cut2(., seq(1, 100, 10)) 
+  rng <- data.frame(ranges = sort(as.character(unique(rcl))), 
+                    category = seq(10, 100, 10)) %>% 
+    arrange(category)
+  dfm <- dfm %>% 
+    dplyr::select(a_5, c_2) %>% 
+    mutate(rango = rcl) %>% 
+    inner_join(., rng, by = c('rango' = 'ranges'))
+  smm <- dfm %>% 
+    group_by(a_5, category) %>% 
+    summarise(count = n()) %>% 
+    ungroup() %>% 
+    mutate(category = paste0('c_', category)) %>% 
+    spread(category, count) %>% 
+    NAer() %>% 
+    retype()
+  rsl <- inner_join(shp, smm, by = c('BARRIO' = 'a_5'))
+  rsl <- as(rsl, 'Spatial')
+  writeOGR(obj = rsl, dsn = '../data/shp/own/movilidad/barrios', layer = paste0('22_rango_edad_', dte), driver = 'ESRI Shapefile', overwrite_layer = TRUE)
+  print('Done!')
+}
+makeMap_22(dfm = tbl)
+
+# Mapa 23. Tiempo promedio de espera --------------------------------------
+makeMap_23 <- function(dfm){
+  # dfm <- tbl
+  dfm <- dfm %>% 
+    dplyr::select(a_5, e_8_1:e_8_10, e_15_1:e_15_10) %>% 
+    NAer() %>% 
+    retype() %>% 
+    as_tibble()
+  sums <- rowSums(dfm[,2:ncol(dfm)], na.rm = TRUE)
+  dfm <- dfm %>% 
+    transmute(a_5,
+              t_espera = sums) %>% 
+    group_by(a_5) %>% 
+    summarise(t_espera = mean(t_espera, na.rm = TRUE)) %>% 
+    ungroup()
+  rsl <- inner_join(shp, dfm, by = c('BARRIO' = 'a_5'))
+  rsl <- as(rsl, 'Spatial')
+  writeOGR(obj = rsl, dsn = '../data/shp/own/movilidad/barrios', layer = paste0('23_tiempo_promedio_espera_', dte), driver = 'ESRI Shapefile', overwrite_layer = TRUE)
+  print('Done!')
+}
+makeMap_23(dfm = tbl)
+
+# Mapa 24. Tiempo promedio de trayecto ------------------------------------
+makeMap_24 <- function(dfm){
+  # dfm <- tbl
+  dfm <- dfm %>% 
+    dplyr::select(a_5, e_9_1:e_9_10, e_16_1:e_16_10) %>% 
+    NAer() %>% 
+    retype() %>% 
+    as_tibble()
+  sums <- rowSums(dfm[,2:ncol(dfm)], na.rm = TRUE)
+  dfm <- dfm %>% 
+    transmute(a_5,
+              t_trayecto = sums) %>% 
+    group_by(a_5) %>% 
+    summarise(t_trayecto = mean(t_trayecto, na.rm = TRUE)) %>% 
+    ungroup()
+  rsl <- inner_join(shp, dfm, by = c('BARRIO' = 'a_5'))
+  rsl <- as(rsl, 'Spatial')
+  writeOGR(obj = rsl, dsn = '../data/shp/own/movilidad/barrios', layer = paste0('24_tiempo_promedio_trayecto_', dte), driver = 'ESRI Shapefile', overwrite_layer = TRUE)
+  print('Done!')
+}
+makeMap_24(dfm = tbl)
+
+# Mapa 25. Tiempo promedio total de desplazamiento ------------------------
+makeMap_25 <- function(dfm){
+  # dfm <- tbl
+  df1 <- dfm %>% 
+    dplyr::select(a_5, e_8_1:e_8_10, e_15_1:e_15_10, ) %>% 
+    NAer() %>% 
+    retype() %>% 
+    as_tibble()
+  df2 <- dfm %>% 
+    dplyr::select(a_5, e_9_1:e_9_10, e_16_1:e_16_10) %>% 
+    NAer() %>% 
+    retype() %>% 
+    as_tibble()
+  sum1 <- rowSums(df1[,2:ncol(df1)], na.rm = TRUE)
+  sum2 <- rowSums(df2[,2:ncol(df2)], na.rm = TRUE)
+  dfm <- dfm %>% 
+    transmute(a_5,
+              t_espera = sum1,
+              t_trayecto = sum2,
+              t_promedio = t_espera + t_trayecto / 2) %>% 
+    group_by(a_5) %>% 
+    summarise(t_promedio = mean(t_promedio, na.rm = TRUE)) %>% 
+    ungroup()
+  rsl <- inner_join(shp, dfm, by = c('BARRIO' = 'a_5'))
+  rsl <- as(rsl, 'Spatial')
+  writeOGR(obj = rsl, dsn = '../data/shp/own/movilidad/barrios', layer = paste0('25_tiempo_promedio_desplazamiento_', dte), driver = 'ESRI Shapefile', overwrite_layer = TRUE)
+  print('Done!')
+}
+makeMap_25(dfm = tbl)
+
+
+
+
+
