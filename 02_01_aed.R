@@ -298,7 +298,7 @@ makeMap_12 <- function(sft, dfm){
   # sft <- dst
   # dfm <- tbl
   dfm <- dfm %>% 
-    dplyr::select(id_encuesta, f_34:f_41)
+    dplyr::select(id_encuesta, f_78:f_87)
   int <- raster::intersect(as(sft, 'Spatial'), as(shp, 'Spatial'))
   int <- st_as_sf(int) %>% 
     dplyr::select(ID_ENCUEST, COMUNA, BARRIO) %>% 
@@ -307,8 +307,8 @@ makeMap_12 <- function(sft, dfm){
     dplyr::select(-geometry)
   
   # Labels
-  lbl <- data.frame(nameCol = paste0('f_', c(34:36, 38:41)),
-                    barrera = c('abordar', 'a_pri', 'ub_asi', 'comu_dst', 'pagar', 'leer', 'bajar'))
+  lbl <- data.frame(nameCol = paste0('f_', c(78:82, 84:87)),
+                    barrera = c('ubic', 'llgr_pard', 'a_prio', 'abrdr_vh', 'ubicar_asn', 'com_dst', 'pgr_trn', 'leer', 'bajar'))
   
   nms <- as.character(lbl$barrera)
   dfm <- inner_join(int, dfm, by = c('ID_ENCUEST' = 'id_encuesta'))
@@ -326,6 +326,41 @@ makeMap_12 <- function(sft, dfm){
     retype()
   rsl <- inner_join(shp, dfm, by = c('BARRIO' = 'barrio')) 
   rsl <- as(rsl, 'Spatial')
-  writeOGR(obj = rsl, dsn = '../data/shp/own/movilidad/barrios', layer = paste0('10_barrera_regreso_taxi_', dte), driver = 'ESRI Shapefile', overwrite_layer = TRUE)
+  writeOGR(obj = rsl, dsn = '../data/shp/own/movilidad/barrios', layer = paste0('12_barrera_regreso_guala_', dte), driver = 'ESRI Shapefile', overwrite_layer = TRUE)
   print('Done!')
 }
+makeMap_12(sft = dsn, dfm = tbl)
+
+# Mapa 13. Barreras ida MIO articulado ------------------------------------
+makeMap_13 <- function(dfm){
+  # dfm <- tbl
+  dfm <- dfm %>% 
+    dplyr::select(id_encuesta, a_5, f_98:f_108)
+  lbl <- data.frame(nameCol = paste0('f_', 98:108),
+                    barrera = c('ubicar', 'llgr_pard', 'a_prio', 'abrdr_vh', 'ubicar_asn', 'uso_prio', 'dcd_rcrrd', 'com_dst', 'pagar', 'leer', 'bajar'))
+  nms <- as.character(lbl$barrera)
+  dfm <- dfm %>% 
+    setNames(c('id_encuesta', 'barrio', nms)) %>% 
+    dplyr::select(-id_encuesta) %>% 
+    gather(dificultad, tipo, -barrio) %>% 
+    drop_na() %>% 
+    filter(tipo %in% c('Alto', 'Muy alto')) %>% 
+    group_by(barrio, dificultad) %>% 
+    summarize(count = n()) %>% 
+    ungroup() %>% 
+    spread(dificultad, count) %>% 
+    NAer() %>% 
+    retype()
+  rsl <- inner_join(shp, dfm, by = c('BARRIO' = 'barrio')) 
+  rsl <- as(rsl, 'Spatial')
+  writeOGR(obj = rsl, dsn = '../data/shp/own/movilidad/barrios', layer = paste0('12_barreras_ida_articulado_', dte), driver = 'ESRI Shapefile', overwrite_layer = TRUE)
+  print('Done!')
+}
+makeMap_13(dfm = tbl)
+
+# Mapa 14. Barreras retorno MIO articulado --------------------------------
+
+
+
+
+
