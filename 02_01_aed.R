@@ -200,9 +200,82 @@ makeMap_08 <- function(sft, dfm){
 }
 makeMap_08(sft = dst, dfm = tbl)
 
+# Mapa 9. Barreras ida taxi -----------------------------------------------
+makeMap_09 <- function(dfm){
+  # dfm <- tbl
+  dfm <- dfm %>% 
+    dplyr::select(id_encuesta, a_5, f_34:f_41)
+  lbl <- data.frame(nameCol = paste0('f_', c(34:36, 38:41)),
+                    barrera = c('abordar', 'a_priorit', 'ub_asiento', 'comu_dest', 'pagar', 'leer', 'bajar'))
+  
+  nms <- as.character(lbl$barrera)
+  dfm <- dfm %>% 
+    setNames(c('id_encuesta', 'barrio', nms)) %>% 
+    dplyr::select(-id_encuesta) %>% 
+    gather(dificultad, tipo, -barrio) %>% 
+    drop_na() %>% 
+    filter(tipo %in%  c('Alto', 'Muy Alto')) %>% 
+    group_by(barrio, dificultad) %>% 
+    summarize(count = n()) %>% 
+    ungroup() %>% 
+    spread(dificultad, count) %>% 
+    NAer() %>% 
+    retype()
+  rsl <- inner_join(shp, dfm, by = c('BARRIO' = 'barrio'))
+  rsl <- as(rsl, 'Spatial')
+  writeOGR(obj = rsl, dsn = '../data/shp/own/movilidad/barrios', layer = paste0('09_barreras_ida_taxi_', dte), driver = 'ESRI Shapefile', overwrite_layer = TRUE)
+  print('Done!')
+}
+makeMap_09(dfm = tbl)
 
+# Mapa 10. Barreras regreso taxi ------------------------------------------
+makeMap_10 <- function(sft, dfm){
+  # sft <- dst
+  # dfm <- tbl
+  dfm <- dfm %>% 
+    dplyr::select(id_encuesta, f_34:f_41)
+  int <- raster::intersect(as(sft, 'Spatial'), as(shp, 'Spatial'))
+  int <- st_as_sf(int) %>% 
+    dplyr::select(ID_ENCUEST, COMUNA, BARRIO) %>% 
+    as.data.frame() %>% 
+    as_tibble() %>% 
+    dplyr::select(-geometry)
+  
+  # Labels
+  lbl <- data.frame(nameCol = paste0('f_', c(34:36, 38:41)),
+                    barrera = c('abordar', 'a_priorit', 'ub_asiento', 'comu_dest', 'pagar', 'leer', 'bajar'))
+  
+  nms <- as.character(lbl$barrera)
+  dfm <- inner_join(int, dfm, by = c('ID_ENCUEST' = 'id_encuesta'))
+  dfm <- dfm %>% 
+    setNames(c('id_encuesta', 'comuna', 'barrio', nms)) %>% 
+    dplyr::select(-id_encuesta) %>% 
+    gather(dificultad, tipo, -barrio, -comuna) %>% 
+    drop_na() %>% 
+    group_by(barrio, dificultad) %>% 
+    summarise(count = n()) %>% 
+    ungroup() %>% 
+    spread(dificultad, count) %>% 
+    NAer() %>% 
+    as_tibble() %>% 
+    retype()
+  rsl <- inner_join(shp, dfm, by = c('BARRIO' = 'barrio')) 
+  rsl <- as(rsl, 'Spatial')
+  writeOGR(obj = rsl, dsn = '../data/shp/own/movilidad/barrios', layer = paste0('10_barrera_regreso_taxi_', dte), driver = 'ESRI Shapefile', overwrite_layer = TRUE)
+  print('Done!')
+}
+makeMap_10(sft = dsn, dfm = tbl)
 
-
-
+# Mapa 11. Barreras ida Jeep, Guala o Vehiculo informal -------------------
+makeMap_11 <- function(dfm){
+  dfm <- tbl
+  dfm <- dfm %>% 
+    dplyr::select(id_encuesta, a_5, f_78:f_87)
+  lbl <- data.frame(nameCol = paste0('f_', c(78:82, 84:87)),
+                    barrera = c(''))
+  
+  
+  
+}
 
 
