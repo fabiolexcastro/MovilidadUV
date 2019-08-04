@@ -264,7 +264,7 @@ makeMap_10 <- function(sft, dfm){
   writeOGR(obj = rsl, dsn = '../data/shp/own/movilidad/barrios', layer = paste0('10_barrera_regreso_taxi_', dte), driver = 'ESRI Shapefile', overwrite_layer = TRUE)
   print('Done!')
 }
-makeMap_10(sft = dsn, dfm = tbl)
+makeMap_10(sft = dst, dfm = tbl)
 
 # Mapa 11. Barreras ida Jeep, Guala o Vehiculo informal -------------------
 makeMap_11 <- function(dfm){
@@ -329,7 +329,7 @@ makeMap_12 <- function(sft, dfm){
   writeOGR(obj = rsl, dsn = '../data/shp/own/movilidad/barrios', layer = paste0('12_barrera_regreso_guala_', dte), driver = 'ESRI Shapefile', overwrite_layer = TRUE)
   print('Done!')
 }
-makeMap_12(sft = dsn, dfm = tbl)
+makeMap_12(sft = dst, dfm = tbl)
 
 # Mapa 13. Barreras ida MIO articulado ------------------------------------
 makeMap_13 <- function(dfm){
@@ -353,14 +353,173 @@ makeMap_13 <- function(dfm){
     retype()
   rsl <- inner_join(shp, dfm, by = c('BARRIO' = 'barrio')) 
   rsl <- as(rsl, 'Spatial')
-  writeOGR(obj = rsl, dsn = '../data/shp/own/movilidad/barrios', layer = paste0('12_barreras_ida_articulado_', dte), driver = 'ESRI Shapefile', overwrite_layer = TRUE)
+  writeOGR(obj = rsl, dsn = '../data/shp/own/movilidad/barrios', layer = paste0('13_barreras_ida_articulado_', dte), driver = 'ESRI Shapefile', overwrite_layer = TRUE)
   print('Done!')
 }
 makeMap_13(dfm = tbl)
 
 # Mapa 14. Barreras retorno MIO articulado --------------------------------
+makeMap_14 <- function(sft, dfm){
+  # sft <- dst
+  # dfm <- tbl
+  dfm <- dfm %>% 
+    dplyr::select(id_encuesta, f_98:f_108)
+  int <- raster::intersect(as(sft, 'Spatial'), as(shp, 'Spatial'))
+  int <- st_as_sf(int) %>% 
+    dplyr::select(ID_ENCUEST, COMUNA, BARRIO) %>% 
+    as.data.frame() %>% 
+    as_tibble() %>% 
+    dplyr::select(-geometry)
+  
+  # Labels
+  lbl <- data.frame(nameCol = paste0('f_', 98:108),
+                    barrera = c('ubicar', 'llgr_pard', 'a_prio', 'abrdr_vh', 'ubicar_asn', 'uso_prio', 'dcd_rcrrd', 'com_dst', 'pagar', 'leer', 'bajar'))
+  nms <- as.character(lbl$barrera)
+  dfm <- inner_join(int, dfm, by = c('ID_ENCUEST' = 'id_encuesta'))
+  dfm <- dfm %>% 
+    setNames(c('id_encuesta', 'comuna', 'barrio', nms)) %>% 
+    dplyr::select(-id_encuesta) %>% 
+    gather(dificultad, tipo, -barrio, -comuna) %>% 
+    drop_na() %>% 
+    group_by(barrio, dificultad) %>% 
+    summarise(count = n()) %>% 
+    ungroup() %>% 
+    spread(dificultad, count) %>% 
+    NAer() %>% 
+    as_tibble() %>% 
+    retype()
+  rsl <- inner_join(shp, dfm, by = c('BARRIO' = 'barrio')) 
+  rsl <- as(rsl, 'Spatial')
+  writeOGR(obj = rsl, dsn = '../data/shp/own/movilidad/barrios', layer = paste0('14_barreras_regreso_articulado_', dte), driver = 'ESRI Shapefile', overwrite_layer = TRUE)
+  print('Done!')
+}
+makeMap_14(sft = dst, dfm = tbl)
+
+# Mapa 15. Barreras ida MIO complementario --------------------------------
+makeMap_15 <- function(dfm){
+  # dfm <- tbl
+  dfm <- dfm %>% 
+    dplyr::select(id_encuesta, a_5, f_120:f_130)
+  lbl <- data.frame(nameCol = paste0('f_', 120:130),
+                    barrera = c('ubicar', 'llgr_pard', 'a_prio', 'abrdr_vh', 'ubicar_asn', 'uso_prio', 'dcd_rcrrd', 'com_dst', 'pagar', 'leer', 'bajar'))
+  nms <- as.character(lbl$barrera)
+  dfm <- dfm %>% 
+    setNames(c('id_encuesta', 'barrio', nms)) %>% 
+    dplyr::select(-id_encuesta) %>% 
+    gather(dificultad, tipo, -barrio) %>% 
+    drop_na() %>% 
+    filter(tipo %in% c('Alto', 'Muy alto')) %>% 
+    group_by(barrio, dificultad) %>% 
+    summarize(count = n()) %>% 
+    ungroup() %>% 
+    spread(dificultad, count) %>% 
+    NAer() %>% 
+    retype()
+  rsl <- inner_join(shp, dfm, by = c('BARRIO' = 'barrio')) 
+  rsl <- as(rsl, 'Spatial')
+  writeOGR(obj = rsl, dsn = '../data/shp/own/movilidad/barrios', layer = paste0('15_barreras_ida_MIOcomplementario_', dte), driver = 'ESRI Shapefile', overwrite_layer = TRUE)
+  print('Done!')
+}
+makeMap_15(dfm = tbl)
+
+# Mapa 16. Barreras regreso MIO complementario ----------------------------
+makeMap_16 <- function(sft, dfm){
+  # sft <- dst
+  # dfm <- tbl
+  dfm <- dfm %>% 
+    dplyr::select(id_encuesta, f_120:f_130)
+  int <- raster::intersect(as(sft, 'Spatial'), as(shp, 'Spatial'))
+  int <- st_as_sf(int) %>% 
+    dplyr::select(ID_ENCUEST, COMUNA, BARRIO) %>% 
+    as.data.frame() %>% 
+    as_tibble() %>% 
+    dplyr::select(-geometry)
+  
+  # Labels
+  lbl <- data.frame(nameCol = paste0('f_', 120:130),
+                    barrera = c('ubicar', 'llgr_pard', 'a_prio', 'abrdr_vh', 'ubicar_asn', 'uso_prio', 'dcd_rcrrd', 'com_dst', 'pagar', 'leer', 'bajar'))
+  nms <- as.character(lbl$barrera)
+  dfm <- inner_join(int, dfm, by = c('ID_ENCUEST' = 'id_encuesta'))
+  dfm <- dfm %>% 
+    setNames(c('id_encuesta', 'comuna', 'barrio', nms)) %>% 
+    dplyr::select(-id_encuesta) %>% 
+    gather(dificultad, tipo, -barrio, -comuna) %>% 
+    drop_na() %>% 
+    group_by(barrio, dificultad) %>% 
+    summarise(count = n()) %>% 
+    ungroup() %>% 
+    spread(dificultad, count) %>% 
+    NAer() %>% 
+    as_tibble() %>% 
+    retype()
+  rsl <- inner_join(shp, dfm, by = c('BARRIO' = 'barrio')) 
+  rsl <- as(rsl, 'Spatial')
+  writeOGR(obj = rsl, dsn = '../data/shp/own/movilidad/barrios', layer = paste0('16_barreras_regreso_articulado_', dte), driver = 'ESRI Shapefile', overwrite_layer = TRUE)
+  print('Done!')
+}
+makeMap_16(sft = dst, dfm = tbl)
+
+#  -------------------------------------------
+makeMap_17 <- function(dfm){
+  # dfm <- tbl
+  dfm <- dfm %>% 
+    dplyr::select(id_encuesta, a_5, f_1:f_10)
+  lbl <- data.frame(nameCol = paste0('f_', c(1:7, 9:10)),
+                    barrera = c('idnt_clles', 'sbr_bjr', 'dspl_and', 'dspl_obst', 'prb_pav', 'acera_rmps', 'crzr_clls', 'puentes', 'leer'))
+  nms <- as.character(lbl$barrera)
+  dfm <- dfm %>% 
+    setNames(c('id_encuesta', 'barrio', nms)) %>% 
+    dplyr::select(-id_encuesta) %>% 
+    gather(dificultad, tipo, -barrio) %>% 
+    drop_na() %>% 
+    filter(tipo %in% c('Alto', 'Muy alto')) %>% 
+    group_by(barrio, dificultad) %>% 
+    summarize(count = n()) %>% 
+    ungroup() %>% 
+    spread(dificultad, count) %>% 
+    NAer() %>% 
+    retype()
+  rsl <- inner_join(shp, dfm, by = c('BARRIO' = 'barrio')) 
+  rsl <- as(rsl, 'Spatial')
+  writeOGR(obj = rsl, dsn = '../data/shp/own/movilidad/barrios', layer = paste0('17_barreras_ida_peaton_', dte), driver = 'ESRI Shapefile', overwrite_layer = TRUE)
+  print('Done!')
+}
+makeMap_17(dfm = tbl)
 
 
-
-
-
+# Mapa 18. Barreras retorno peaton  ---------------------------------------
+makeMap_18 <- function(sft, dfm){
+  # sft <- dst
+  # dfm <- tbl
+  dfm <- dfm %>% 
+    dplyr::select(id_encuesta, f_1:f_10)
+  int <- raster::intersect(as(sft, 'Spatial'), as(shp, 'Spatial'))
+  int <- st_as_sf(int) %>% 
+    dplyr::select(ID_ENCUEST, COMUNA, BARRIO) %>% 
+    as.data.frame() %>% 
+    as_tibble() %>% 
+    dplyr::select(-geometry)
+  
+  # Labels
+  lbl <- data.frame(nameCol = paste0('f_', 120:130),
+                    barrera = c('ubicar', 'llgr_pard', 'a_prio', 'abrdr_vh', 'ubicar_asn', 'uso_prio', 'dcd_rcrrd', 'com_dst', 'pagar', 'leer', 'bajar'))
+  nms <- as.character(lbl$barrera)
+  dfm <- inner_join(int, dfm, by = c('ID_ENCUEST' = 'id_encuesta'))
+  dfm <- dfm %>% 
+    setNames(c('id_encuesta', 'comuna', 'barrio', nms)) %>% 
+    dplyr::select(-id_encuesta) %>% 
+    gather(dificultad, tipo, -barrio, -comuna) %>% 
+    drop_na() %>% 
+    group_by(barrio, dificultad) %>% 
+    summarise(count = n()) %>% 
+    ungroup() %>% 
+    spread(dificultad, count) %>% 
+    NAer() %>% 
+    as_tibble() %>% 
+    retype()
+  rsl <- inner_join(shp, dfm, by = c('BARRIO' = 'barrio')) 
+  rsl <- as(rsl, 'Spatial')
+  writeOGR(obj = rsl, dsn = '../data/shp/own/movilidad/barrios', layer = paste0('16_barreras_regreso_articulado_', dte), driver = 'ESRI Shapefile', overwrite_layer = TRUE)
+  print('Done!')
+}
+makeMap_16(sft = dst, dfm = tbl)
