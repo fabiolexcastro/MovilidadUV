@@ -1,4 +1,3 @@
-
 # -------------------------------------------------------------------------
 # Proyecto de Movilidad  --------------------------------------------------
 # -------------------------------------------------------------------------
@@ -12,10 +11,11 @@ rm(list = ls())
 options(scipen = 999)
 
 # Cargar datos ------------------------------------------------------------
-tbl <- read_excel('../data/tbl/movilidad_accesible/wide/0731_total_wide.xlsx')
+pth <- '../data/tbl/movilidad_accesible/wide/0731_total_wide.xlsx'
+tbl <- read_excel(pth)
 shp <- st_read('../data/shp/base/bcs_barrios_geo.shp') %>% 
   mutate(BARRIO = as.character(BARRIO))
-dte <- gsub('-', '_', Sys.Date())
+dte <- basename(pth) %>% str_sub(., start = 1, end = 4)
 dst <- st_read('../data/shp/own/movilidad/Shape 7-31/7-31_Destino.shp')
 
 # Labels ------------------------------------------------------------------
@@ -145,7 +145,60 @@ makeMap_07 <- function(dfm){
 }
 makeMap_07(dfm = tbl)
 
-
+# Mapa 8. Barreras regreso moto y bicicleta -------------------------------
+makeMap_08 <- function(sft, dfm){
+  # sft <- dst
+  # dfm <- tbl
+  dfm <- dfm %>% 
+    dplyr::select(id_encuesta, f_19:f_33)
+  int <- raster::intersect(as(sft, 'Spatial'), as(shp, 'Spatial')) 
+  int <- st_as_sf(int) %>% 
+    dplyr::select(ID_ENCUEST, COMUNA, BARRIO) %>% 
+    as.data.frame() %>% 
+    as_tibble() %>% 
+    dplyr::select(-geometry)
+  # Labels 
+  lbl <- data.frame(nameCol = paste0('f_', c(19:24, 26:33)),
+                    barrera = c('m_abordar', 'm_ubicar', 'm_manejar', 'm_retr', 'm_leer', 'm_pr_pav', 'm_bajar',
+                                'b_abordar', 'b_ubicar', 'b_leer', 'b_movili', 'b_pr_pav', 'b_dcdrrecor', 'b_bajar'))
+  nms <- as.character(lbl$barrera)
+  dfm <- inner_join(int, dfm, by = c('ID_ENCUEST' = 'id_encuesta'))
+  dfm <- dfm %>% 
+    setNames(c('id_encuesta', 'comuna', 'barrio', nms)) %>% 
+    dplyr::select(-id_encuesta) %>% 
+    gather(dificultad, tipo, -barrio, -comuna) %>% 
+    drop_na() %>% 
+    dplyr::select(-comuna) %>% 
+    group_by(barrio, dificultad) %>% 
+    summarise(count = n()) %>% 
+    ungroup() %>% 
+    spread(dificultad, count) %>% 
+    NAer() %>% 
+    as_tibble() %>% 
+    retype()
+  
+  if(ncol(dfm) == 15){
+    dfm <- dfm %>% 
+      transmute(barrio,
+                abordar = b_abordar + m_abordar,
+                ubicar = b_ubicar + m_ubicar,
+                bajar = b_bajar + m_bajar,
+                dcdrrecor = b_dcdrrecor,
+                leer = m_leer + b_leer,
+                retr = m_retr,
+                pr_pav = m_pr_pav + m_pr_pav,
+                movili = b_movili,
+                manejar = m_manejar)
+  } else {
+    dfm <- dfm
+  }
+  
+  rsl <- inner_join(shp, dfm, by = c('BARRIO' = 'barrio'))  
+  rsl <- as(rsl, 'Spatial')
+  writeOGR(obj = rsl, dsn = '../data/shp/own/movilidad/barrios', layer = paste0('08_barrera_regreso_bicimoto_', dte), driver = 'ESRI Shapefile', overwrite_layer = TRUE)
+  print('Done!')
+}
+makeMap_08(sft = dst, dfm = tbl)
 
 
 
