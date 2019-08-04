@@ -459,7 +459,7 @@ makeMap_16 <- function(sft, dfm){
 }
 makeMap_16(sft = dst, dfm = tbl)
 
-#  -------------------------------------------
+# Mapa 17. Barreras ida peaton -------------------------------------------
 makeMap_17 <- function(dfm){
   # dfm <- tbl
   dfm <- dfm %>% 
@@ -485,7 +485,6 @@ makeMap_17 <- function(dfm){
   print('Done!')
 }
 makeMap_17(dfm = tbl)
-
 
 # Mapa 18. Barreras retorno peaton  ---------------------------------------
 makeMap_18 <- function(sft, dfm){
