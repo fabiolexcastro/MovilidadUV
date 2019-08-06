@@ -1,6 +1,5 @@
 # -------------------------------------------------------------------------
 # Proyecto de Movilidad  --------------------------------------------------
-# Grupo SIG ---------------------------------------------------------------
 # -------------------------------------------------------------------------
 
 # Cargar libreiras --------------------------------------------------------
@@ -10,6 +9,10 @@ pacman::p_load(raster, rgdal, rgeos, stringr, velox, sf, tidyverse, readxl, qdap
 g <- gc(reset = TRUE)
 rm(list = ls())
 options(scipen = 999)
+
+ctg <- data.frame(tipo = c('Ninguno', 'Bajo', 'Medio', 'Alto', 'Muy alto'),
+                  valor = 1:5)
+ctg <- ctg %>% mutate(tipo = as.character(tipo))
 
 # Cargar datos ------------------------------------------------------------
 pth <- '../data/tbl/movilidad_accesible/wide/0731_total_wide.xlsx'
@@ -134,11 +137,14 @@ makeMap_07 <- function(dfm){
     dplyr::select(-id_encuesta) %>% 
     gather(dificultad, tipo, -barrio) %>% 
     drop_na() %>%
-    filter(tipo %in% c('Alto', 'Muy Alto')) %>% 
+    inner_join(., ctg, by = 'tipo') %>% 
+    # filter(tipo %in% c('Alto', 'Muy Alto')) %>% 
     group_by(barrio, dificultad) %>% 
-    summarize(count = n()) %>% 
+    summarize(promedio = mean(valor, na.rm = TRUE)) %>% 
     ungroup() %>% 
-    spread(dificultad, count)
+    spread(dificultad, promedio) %>% 
+    NAer() %>% 
+    retype() 
   rsl <- inner_join(shp, dfm, by = c('BARRIO' = 'barrio'))
   rsl <- as(rsl, 'Spatial')
   writeOGR(obj = rsl, dsn = '../data/shp/own/movilidad/barrios', layer = paste0('07_barrera_ida_bicimoto_', dte), driver = 'ESRI Shapefile', overwrite_layer = TRUE)
@@ -208,18 +214,18 @@ makeMap_09 <- function(dfm){
     dplyr::select(id_encuesta, a_5, f_34:f_41)
   lbl <- data.frame(nameCol = paste0('f_', c(34:36, 38:41)),
                     barrera = c('abordar', 'a_priorit', 'ub_asiento', 'comu_dest', 'pagar', 'leer', 'bajar'))
-  
   nms <- as.character(lbl$barrera)
   dfm <- dfm %>% 
     setNames(c('id_encuesta', 'barrio', nms)) %>% 
     dplyr::select(-id_encuesta) %>% 
     gather(dificultad, tipo, -barrio) %>% 
     drop_na() %>% 
-    filter(tipo %in%  c('Alto', 'Muy Alto')) %>% 
+    inner_join(., ctg, by = 'tipo') %>% 
+    # filter(tipo %in%  c('Alto', 'Muy Alto')) %>% 
     group_by(barrio, dificultad) %>% 
-    summarize(count = n()) %>% 
+    summarize(promedio = mean(valor, na.rm = TRUE)) %>% 
     ungroup() %>% 
-    spread(dificultad, count) %>% 
+    spread(dificultad, promedio) %>% 
     NAer() %>% 
     retype()
   rsl <- inner_join(shp, dfm, by = c('BARRIO' = 'barrio'))
@@ -253,10 +259,11 @@ makeMap_10 <- function(sft, dfm){
     dplyr::select(-id_encuesta) %>% 
     gather(dificultad, tipo, -barrio, -comuna) %>% 
     drop_na() %>% 
+    inner_join(., ctg, by = 'tipo') %>% 
     group_by(barrio, dificultad) %>% 
-    summarise(count = n()) %>% 
+    summarize(promedio = mean(valor, na.rm = TRUE)) %>% 
     ungroup() %>% 
-    spread(dificultad, count) %>% 
+    spread(dificultad, promedio) %>% 
     NAer() %>% 
     as_tibble() %>% 
     retype()
@@ -279,12 +286,13 @@ makeMap_11 <- function(dfm){
     setNames(c('id_encuesta', 'barrio', nms)) %>% 
     dplyr::select(-id_encuesta) %>% 
     gather(dificultad, tipo, -barrio) %>% 
-    drop_na() %>% 
-    filter(tipo %in% c('Alto', 'Muy alto')) %>% 
+    drop_na() %>%
+    inner_join(., ctg, by = 'tipo') %>% 
+    # filter(tipo %in% c('Alto', 'Muy alto')) %>% 
     group_by(barrio, dificultad) %>% 
-    summarize(count = n()) %>% 
+    summarize(promedio = mean(valor, na.rm = TRUE)) %>% 
     ungroup() %>% 
-    spread(dificultad, count) %>% 
+    spread(dificultad, promedio) %>% 
     NAer() %>% 
     retype()
   rsl <- inner_join(shp, dfm, by = c('BARRIO' = 'barrio')) 
@@ -318,10 +326,11 @@ makeMap_12 <- function(sft, dfm){
     dplyr::select(-id_encuesta) %>% 
     gather(dificultad, tipo, -barrio, -comuna) %>% 
     drop_na() %>% 
+    inner_join(., ctg, by = 'tipo') %>% 
     group_by(barrio, dificultad) %>% 
-    summarise(count = n()) %>% 
+    summarize(promedio = mean(valor, na.rm = TRUE)) %>% 
     ungroup() %>% 
-    spread(dificultad, count) %>% 
+    spread(dificultad, promedio) %>% 
     NAer() %>% 
     as_tibble() %>% 
     retype()
@@ -345,11 +354,12 @@ makeMap_13 <- function(dfm){
     dplyr::select(-id_encuesta) %>% 
     gather(dificultad, tipo, -barrio) %>% 
     drop_na() %>% 
-    filter(tipo %in% c('Alto', 'Muy alto')) %>% 
+    inner_join(., ctg, by = 'tipo') %>% 
+    # filter(tipo %in% c('Alto', 'Muy alto')) %>% 
     group_by(barrio, dificultad) %>% 
-    summarize(count = n()) %>% 
+    summarize(promedio = mean(valor, na.rm = TRUE)) %>% 
     ungroup() %>% 
-    spread(dificultad, count) %>% 
+    spread(dificultad, promedio) %>% 
     NAer() %>% 
     retype()
   rsl <- inner_join(shp, dfm, by = c('BARRIO' = 'barrio')) 
@@ -382,10 +392,11 @@ makeMap_14 <- function(sft, dfm){
     dplyr::select(-id_encuesta) %>% 
     gather(dificultad, tipo, -barrio, -comuna) %>% 
     drop_na() %>% 
+    inner_join(., ctg, by = 'tipo') %>% 
     group_by(barrio, dificultad) %>% 
-    summarise(count = n()) %>% 
+    summarise(promedio = mean(valor, na.rm = TRUE)) %>% 
     ungroup() %>% 
-    spread(dificultad, count) %>% 
+    spread(dificultad, promedio) %>% 
     NAer() %>% 
     as_tibble() %>% 
     retype()
@@ -409,9 +420,10 @@ makeMap_15 <- function(dfm){
     dplyr::select(-id_encuesta) %>% 
     gather(dificultad, tipo, -barrio) %>% 
     drop_na() %>% 
-    filter(tipo %in% c('Alto', 'Muy alto')) %>% 
+    # filter(tipo %in% c('Alto', 'Muy alto')) %>% 
+    inner_join(., ctg, by = 'tipo') %>% 
     group_by(barrio, dificultad) %>% 
-    summarize(count = n()) %>% 
+    summarize(promedio = mean(valor, na.rm = TRUE)) %>% 
     ungroup() %>% 
     spread(dificultad, count) %>% 
     NAer() %>% 
@@ -446,10 +458,11 @@ makeMap_16 <- function(sft, dfm){
     dplyr::select(-id_encuesta) %>% 
     gather(dificultad, tipo, -barrio, -comuna) %>% 
     drop_na() %>% 
+    inner_join(., ctg, by = 'tipo') %>% 
     group_by(barrio, dificultad) %>% 
-    summarise(count = n()) %>% 
+    summarise(promedio = mean(valor, na.rm = TRUE)) %>% 
     ungroup() %>% 
-    spread(dificultad, count) %>% 
+    spread(dificultad, promedio) %>% 
     NAer() %>% 
     as_tibble() %>% 
     retype()
@@ -473,11 +486,12 @@ makeMap_17 <- function(dfm){
     dplyr::select(-id_encuesta) %>% 
     gather(dificultad, tipo, -barrio) %>% 
     drop_na() %>% 
-    filter(tipo %in% c('Alto', 'Muy alto')) %>% 
+    # filter(tipo %in% c('Alto', 'Muy alto')) %>% 
+    inner_join(., ctg, by = 'tipo') %>% 
     group_by(barrio, dificultad) %>% 
-    summarize(count = n()) %>% 
+    summarize(promedio = mean(valor, na.rm = TRUE)) %>% 
     ungroup() %>% 
-    spread(dificultad, count) %>% 
+    spread(dificultad, promedio) %>% 
     NAer() %>% 
     retype()
   rsl <- inner_join(shp, dfm, by = c('BARRIO' = 'barrio')) 
@@ -509,10 +523,11 @@ makeMap_18 <- function(sft, dfm){
     dplyr::select(-id_encuesta) %>% 
     gather(dificultad, tipo, -barrio, -comuna) %>% 
     drop_na() %>% 
+    inner_join(., ctg, by = 'tipo') %>% 
     group_by(barrio, dificultad) %>% 
-    summarise(count = n()) %>% 
+    summarise(promedio = mean(valor, na.rm = TRUE)) %>% 
     ungroup() %>% 
-    spread(dificultad, count) %>% 
+    spread(dificultad, promedio) %>% 
     NAer() %>% 
     as_tibble() %>% 
     retype()
@@ -720,6 +735,8 @@ makeMap_25 <- function(dfm){
   print('Done!')
 }
 makeMap_25(dfm = tbl)
+
+
 
 
 
