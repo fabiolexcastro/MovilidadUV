@@ -140,7 +140,7 @@ makeMap_07 <- function(dfm){
     inner_join(., ctg, by = 'tipo') %>% 
     # filter(tipo %in% c('Alto', 'Muy Alto')) %>% 
     group_by(barrio, dificultad) %>% 
-    summarize(promedio = mean(valor, na.rm = TRUE)) %>% 
+    dplyr::summarize(promedio = mean(valor, na.rm = TRUE)) %>% 
     ungroup() %>% 
     spread(dificultad, promedio) %>% 
     NAer() %>% 
@@ -166,8 +166,8 @@ makeMap_08 <- function(sft, dfm){
     dplyr::select(-geometry)
   # Labels 
   lbl <- data.frame(nameCol = paste0('f_', c(19:24, 26:33)),
-                    barrera = c('m_abordar', 'm_ubicar', 'm_manejar', 'm_retr', 'm_leer', 'm_pr_pav', 'm_bajar',
-                                'b_abordar', 'b_ubicar', 'b_leer', 'b_movili', 'b_pr_pav', 'b_dcdrrecor', 'b_bajar'))
+                    barrera = c('m_abrdr', 'm_ubicr', 'm_manjr', 'm_retr', 'm_leer', 'm_pr_pv', 'm_bajar',
+                                'b_abrdr', 'b_ubicr', 'b_leer', 'b_movil', 'b_pr_pv', 'b_dcdrr', 'b_bajar'))
   nms <- as.character(lbl$barrera)
   dfm <- inner_join(int, dfm, by = c('ID_ENCUEST' = 'id_encuesta'))
   dfm <- dfm %>% 
@@ -184,21 +184,21 @@ makeMap_08 <- function(sft, dfm){
     as_tibble() %>% 
     retype()
   
-  if(ncol(dfm) == 15){
-    dfm <- dfm %>% 
-      transmute(barrio,
-                abordar = b_abordar + m_abordar,
-                ubicar = b_ubicar + m_ubicar,
-                bajar = b_bajar + m_bajar,
-                dcdrrecor = b_dcdrrecor,
-                leer = m_leer + b_leer,
-                retr = m_retr,
-                pr_pav = m_pr_pav + m_pr_pav,
-                movili = b_movili,
-                manejar = m_manejar)
-  } else {
-    dfm <- dfm
-  }
+  # if(ncol(dfm) == 15){
+  #   dfm <- dfm %>% 
+  #     transmute(barrio,
+  #               abordar = b_abordar + m_abordar,
+  #               ubicar = b_ubicar + m_ubicar,
+  #               bajar = b_bajar + m_bajar,
+  #               dcdrrecor = b_dcdrrecor,
+  #               leer = m_leer + b_leer,
+  #               retr = m_retr,
+  #               pr_pav = m_pr_pav + m_pr_pav,
+  #               movili = b_movili,
+  #               manejar = m_manejar)
+  # } else {
+  #   dfm <- dfm
+  # }
   
   rsl <- inner_join(shp, dfm, by = c('BARRIO' = 'barrio'))  
   rsl <- as(rsl, 'Spatial')
