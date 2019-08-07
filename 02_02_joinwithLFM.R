@@ -42,19 +42,18 @@ makeMap_03 <- function(){
 }
 
 # Mapa 4. Destino total de los viajes -------------------------------------
-own <- st_read('../data/shp/own/movilidad/barrios/03_origenPcD_0731.shp')
-lfm <- st_read('../data/shp/own/movilidad/lfm/03_origen_viajes.shp')
-
-makeMap_03 <- function(){
+own <- st_read('../data/shp/own/movilidad/barrios/04_destinoPcD_0731.shp')
+lfm <- st_read('../data/shp/own/movilidad/lfm/04_destino_viajes.shp')
+makeMap_04 <- function(){
   own <- own %>% 
     as.data.frame() %>% 
     as_tibble() %>% 
     dplyr::select(BARRIO, count)
   lfm <- lfm %>% 
     as.data.frame() %>% 
+    dplyr::select(BARRIO, TOTAL_VIAJ) %>% 
     as_tibble() %>% 
-    dplyr::select(BARRIO, TOT_VIAJES) %>% 
-    rename(count = TOT_VIAJES)
+    rename(count = TOTAL_VIAJ)
   print(unique(colnames(own) == colnames(lfm)))
   rsl <- rbind(own, lfm) %>% 
     group_by(BARRIO) %>% 
@@ -63,22 +62,64 @@ makeMap_03 <- function(){
     mutate(BARRIO = as.character(BARRIO))
   rsl <- inner_join(shp, rsl, by = 'BARRIO')
   rsl <- as(rsl, 'Spatial')
-  writeOGR(obj = rsl, dsn = '../data/shp/own/movilidad/final', layer = paste0('03_origenviajes_', dte), driver = 'ESRI Shapefile', overwrite_layer = TRUE)
+  writeOGR(obj = rsl, dsn = '../data/shp/own/movilidad/final', layer = paste0('04_destino_', dte), driver = 'ESRI Shapefile', overwrite_layer = TRUE)
   print('Done!')
 }
-
-
-
+makeMap_04()
 
 # Mapa 5. Origen de viajes por modo de transporte -------------------------
-
-
+own <- st_read('../data/shp/own/movilidad/barrios/05_origenMTPcD_0731.shp')
+lfm <- st_read('../data/shp/own/movilidad/lfm/mapa5_6_origen_destino.shp')
+makeMap_05 <- function(){
+  lfm <- lfm %>% 
+    dplyr::select(BARRIO, starts_with('ori', ignore.case = TRUE)) %>% 
+    as.data.frame() %>% 
+    dplyr::select(-geometry) %>% 
+    as_tibble() %>% 
+    setNames(c('BARRIO', 'MIOp', 'buspubl', 'jeep', 'taxi', 'vpart', 'mpart', 'bici', 'camin_rod', 'otro'))
+  own <- own %>% 
+    as.data.frame() %>% 
+    as_tibble() %>% 
+    dplyr::select(BARRIO, bici:vpart)
+  rsl <- bind_rows(own, lfm) %>% 
+    NAer() %>% 
+    retype() %>% 
+    group_by(BARRIO) %>% 
+    summarize_all(.funs = sum) %>% 
+    ungroup()
+  rsl <- inner_join(shp, rsl, by = 'BARRIO')
+  rsl <- as(rsl, 'Spatial')
+  writeOGR(obj = rsl, dsn = '../data/shp/own/movilidad/final', layer = paste0('05_origenMDT_', dte), driver = 'ESRI Shapefile', overwrite_layer = TRUE)
+  print('Done!')
+}
+makeMap_05()
 
 # Mapa 6. Destino de viajes por modo de transporte ------------------------
-
-
-
-
+own <- st_read('../data/shp/own/movilidad/barrios/06_destinoMTPcD_0731.shp')
+lfm <- st_read('../data/shp/own/movilidad/lfm/mapa5_6_origen_destino.shp')
+makeMap_06 <- function(){
+  lfm <- lfm %>% 
+    dplyr::select(BARRIO, starts_with('dst', ignore.case = TRUE)) %>% 
+    as.data.frame() %>% 
+    dplyr::select(-geometry) %>% 
+    as_tibble() %>% 
+    setNames(c('BARRIO', 'MIOp', 'buspubl', 'jeep', 'taxi', 'vpart', 'mpart', 'bici', 'camin_rod', 'otro'))
+  own <- own %>% 
+    as.data.frame() %>% 
+    as_tibble() %>% 
+    dplyr::select(BARRIO, bici:vpart)
+  rsl <- bind_rows(own, lfm) %>% 
+    NAer() %>% 
+    retype() %>% 
+    group_by(BARRIO) %>% 
+    summarize_all(.funs = sum) %>% 
+    ungroup()
+  rsl <- inner_join(shp, rsl, by = 'BARRIO')
+  rsl <- as(rsl, 'Spatial')
+  writeOGR(obj = rsl, dsn = '../data/shp/own/movilidad/final', layer = paste0('06_destinoMDT_', dte), driver = 'ESRI Shapefile', overwrite_layer = TRUE)
+  print('Done!')
+}
+makeMap_06()
 
 # Mapa 7. Barreras ida moto y bicicleta -----------------------------------
 own <- st_read('../data/shp/own/movilidad/barrios/07_barrera_ida_bicimoto_0731.shp')
