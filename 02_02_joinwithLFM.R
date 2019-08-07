@@ -490,7 +490,7 @@ makeMap_20 <- function(){
     dplyr::select(num_encuesta, fuente, dir_residencia, barrio_residencia, causadiscapacidad) %>% 
     inner_join(., lbl, by = c('causadiscapacidad' = 'value')) %>% 
     group_by(category, barrio_residencia) %>% 
-    summarize(count = n()) %>% 
+    dplyr::summarize(count = n()) %>% 
     ungroup()
   lfm <- lfm %>% 
     mutate(category = gsub(' ', '_', category)) %>% 
