@@ -2,9 +2,9 @@
 # Proyecto de Movilidad  --------------------------------------------------
 # -------------------------------------------------------------------------
 
-# Cargar libreiras --------------------------------------------------------
+# Cargar librerias --------------------------------------------------------
 require(pacman)
-pacman::p_load(raster, rgdal, rgeos, stringr, velox, sf, tidyverse, readxl, qdap, hablar)
+pacman::p_load(raster, rgdal, rgeos, stringr, velox, sf, tidyverse, readxl, qdap, hablar, Hmisc)
 
 g <- gc(reset = TRUE)
 rm(list = ls())
@@ -40,6 +40,7 @@ makeMap_03 <- function(){
   writeOGR(obj = rsl, dsn = '../data/shp/own/movilidad/final', layer = paste0('03_origenviajes_', dte), driver = 'ESRI Shapefile', overwrite_layer = TRUE)
   print('Done!')
 }
+makeMap_03()
 
 # Mapa 4. Destino total de los viajes -------------------------------------
 own <- st_read('../data/shp/own/movilidad/barrios/04_destinoPcD_0731.shp')
@@ -126,24 +127,23 @@ own <- st_read('../data/shp/own/movilidad/barrios/07_barrera_ida_bicimoto_0731.s
 lfm_mto <- st_read('../data/shp/own/movilidad/lfm/07_barreras_ida_moto.shp')
 lfm_bcc <- st_read('../data/shp/own/movilidad/lfm/07_barreras_ida_bicicleta.shp')
 makeMap_07 <- function(){
+  
+  own <- own %>% 
+    as.data.frame() %>% 
+    dplyr::select(BARRIO, b_abrdr:m_ubicr)
   sh1 <- lfm_mto %>% 
     dplyr::select(BARRIO, Ave_B1:Ave_B7) %>% 
-    setNames(c('BARRIO', 'm_abordar', 'm_ubicar', 'm_manejar', 'm_retr', 'm_leer', 'm_pr_pav', 'm_bajar', 'geometry')) %>% 
+    setNames(c('BARRIO', 'm_abrdr', 'm_ubicr', 'm_manjr', 'm_retr', 'm_leer', 'm_pr_pv', 'm_bajar', 'geometry')) %>% 
     as.data.frame() %>% 
     as_tibble() %>% 
     dplyr::select(-geometry)
   sh2 <- lfm_bcc %>% 
     dplyr::select(BARRIO, Ave_B1:Ave_B6) %>% 
-    setNames(c('BARRIO', 'b_ubicar', 'b_manejar', 'b_leer', 'b_movili', 'b_pr_pav', 'b_bajar', 'geometry')) %>% 
+    setNames(c('BARRIO', 'b_abrdr', 'b_ubicr', 'b_leer', 'b_movil', 'b_pr_pv', 'b_bajar', 'geometry')) %>% 
     as.data.frame() %>% 
     as_tibble() %>% 
     dplyr::select(-geometry)
   dfm <- inner_join(sh1, sh2, by = 'BARRIO')
-  colnames(dfm)
-  own <- own %>% 
-    as.data.frame() %>% 
-    dplyr::select(BARRIO, m_abrdr, m_ubicr, m_manjr, m_retr, m_leer, m_pr_pv, m_bajar, b_ubicr, b_leer, b_movil, b_pr_pv, b_bajar) 
-    # setNames(c('BARRIO', 'm_abrdr', 'b_bajar', 'b_dcdrr', 'b_leer', 'b_movil', 'b_pr_pv', 'b_ubicr', 'm_abrdr', 'm_bajar', 'm_leer', 'm_manjr', 'm_pr_pv', 'm_retr', 'm_ubicr'))
   dfm <- bind_rows(dfm, own)
   dfm <- dfm %>% mutate(BARRIO = as.character(BARRIO))
   rsl <- inner_join(shp, dfm, by = 'BARRIO')
@@ -158,31 +158,30 @@ own <- st_read('../data/shp/own/movilidad/barrios/08_barrera_regreso_bicimoto_07
 lfm_mto <- st_read('../data/shp/own/movilidad/lfm/08_barreras_regreso_moto.shp')
 lfm_bcc <- st_read('../data/shp/own/movilidad/lfm/08_barreras_regreso_bici.shp')
 makeMap_08 <- function(){
+  own <- own %>% 
+    as.data.frame() %>% 
+    dplyr::select(BARRIO, b_abrdr:m_ubicr)
   sh1 <- lfm_mto %>% 
     dplyr::select(BARRIO, Ave_B1:Ave_B7) %>% 
-    setNames(c('BARRIO', 'm_abordar', 'm_ubicar', 'm_manejar', 'm_retr', 'm_leer', 'm_pr_pav', 'm_bajar', 'geometry')) %>% 
+    setNames(c('BARRIO', 'm_abrdr', 'm_ubicr', 'm_manjr', 'm_retr', 'm_leer', 'm_pr_pv', 'm_bajar', 'geometry')) %>% 
     as.data.frame() %>% 
     as_tibble() %>% 
     dplyr::select(-geometry)
   sh2 <- lfm_bcc %>% 
     dplyr::select(BARRIO, Ave_B1:Ave_B6) %>% 
-    setNames(c('BARRIO', 'b_ubicar', 'b_manejar', 'b_leer', 'b_movili', 'b_pr_pav', 'b_bajar', 'geometry')) %>% 
+    setNames(c('BARRIO', 'b_abrdr', 'b_ubicr', 'b_leer', 'b_movil', 'b_pr_pv', 'b_bajar', 'geometry')) %>% 
     as.data.frame() %>% 
     as_tibble() %>% 
     dplyr::select(-geometry)
-  sh3 <- own %>% 
-    dplyr::select(BARRIO, abordar, ubicar, bajar, dcdrrecor, leer, retr, pr_pav, movili, manejar) %>% 
-    as.data.frame() %>% 
-    as_tibble() %>% 
-    dplyr::select(-geometry)
-  dfm <- bind_rows(dfm, sh3) 
+  dfm <- inner_join(sh1, sh2, by = 'BARRIO')
+  dfm <- bind_rows(dfm, own)
+  dfm <- dfm %>% mutate(BARRIO = as.character(BARRIO))
   rsl <- inner_join(shp, dfm, by = 'BARRIO')
   rsl <- as(rsl, 'Spatial')
   writeOGR(obj = rsl, dsn = '../data/shp/own/movilidad/final', layer = paste0('08_regresobicimotoPcD_', dte), driver = 'ESRI Shapefile', overwrite_layer = TRUE)
   print('Done!')
 }
 makeMap_08()
-
 # Mapa 9. Barreras ida taxi -----------------------------------------------
 own <- st_read('../data/shp/own/movilidad/barrios/09_barreras_ida_taxi_0731.shp')
 lfm <- st_read('../data/shp/own/movilidad/lfm/09_barreras_ida_taxi.shp')
@@ -576,7 +575,6 @@ makeMap_22 <- function(){
     as_tibble() %>% 
     dplyr::select(BARRIO, c_10:c_90) %>% 
     mutate(BARRIO = as.character(BARRIO))
-  print(unique(colnames(own) == colnames(tbl)))
   smm <- bind_rows(smm, own) %>% 
     NAer() %>% 
     retype() %>% 
