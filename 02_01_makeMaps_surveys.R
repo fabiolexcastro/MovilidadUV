@@ -4,7 +4,7 @@
 
 # Cargar libreiras --------------------------------------------------------
 require(pacman)
-pacman::p_load(raster, rgdal, rgeos, stringr, velox, sf, tidyverse, readxl, qdap, hablar)
+pacman::p_load(raster, rgdal, rgeos, stringr, velox, sf, tidyverse, readxl, qdap, hablar, Hmisc)
 
 g <- gc(reset = TRUE)
 rm(list = ls())
@@ -425,7 +425,7 @@ makeMap_15 <- function(dfm){
     group_by(barrio, dificultad) %>% 
     summarize(promedio = mean(valor, na.rm = TRUE)) %>% 
     ungroup() %>% 
-    spread(dificultad, count) %>% 
+    spread(dificultad, promedio) %>% 
     NAer() %>% 
     retype()
   rsl <- inner_join(shp, dfm, by = c('BARRIO' = 'barrio')) 
@@ -583,7 +583,7 @@ makeMap_20 <- function(dfm){
   # dfm <- tbl
   lbl <- data.frame(tipo = c('Por edad avanzada, envejecimiento',
                              'Porque nació así',
-                             'Por otra causa',
+                             'Por enfermedad profesional',
                              'Por un accidente',
                              'Por una enfermedad',
                              'Por hechos violentos',
@@ -591,7 +591,7 @@ makeMap_20 <- function(dfm){
                              'Por otra causa'),
                     label = c('edad',
                               'nacim',
-                              'otra_causa',
+                              'enf_pro',
                               'accidnt',
                               'enferm',
                               'violenc',
